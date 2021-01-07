@@ -15,7 +15,7 @@ function App() {
           target="_blank"
           rel="noopener noreferrer"
         >
-          Learn React Now! Woah fast yeah!
+          react-three-fiber to be used here
         </a>
       </header>
     </div>
