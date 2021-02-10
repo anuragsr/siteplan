@@ -22,7 +22,7 @@ const CameraControls = () => {
     gl: { domElement },
     scene
   } = useThree()
-      , inspect = () => {
+  , inspect = () => {
     window.camera = camera
     window.THREE = THREE
     window.scene = scene
@@ -100,21 +100,31 @@ const CameraControls = () => {
   return (
     <group scale={props.scale} name={props.name} rotation={props.rotation} position={props.position}>{
       props.children.map((child, idx) => (
-          <mesh key={idx} {...child}>
-            <meshStandardMaterial {...child.material} transparent opacity={props.opacity}/>
-          </mesh>
+        <mesh key={idx} {...child}>
+          <meshStandardMaterial {...child.material} transparent opacity={props.opacity}/>
+        </mesh>
       ))
     }</group>
   )
 }
 , Buildings = ({ name, url, pos, opacity, showLabels }) => {
-  l("Building Labels", showLabels)
+  // l("Building Labels", showLabels)
   const gltf = useLoader(GLTFLoader, url)
+  gltf.scene.name = name
   l(gltf.scene)
   // document.getElementById("overlay").classList.add("closed")
 
   return (
-    <group name={name} position={pos}>{
+    <primitive
+      name={name}
+      // rotation={rot}
+      position={pos}
+      // onPointerOver={(event) => l("over", event.object)}
+      // onPointerOut={(event) => l("out", event.object)}
+      object={gltf.scene}
+    />
+  )
+    {/*<group name={name} position={pos}>{
       gltf.scene.children.map((child, idx) => {
         // const origColor = child.material ? child.material.color : 0xffffff
         // const origEmissive = child.material ? child.material.emissive : 0xffffff
@@ -143,8 +153,7 @@ const CameraControls = () => {
           </React.Fragment>
         )
       })
-    }</group>
-  )
+    }</group>*/}
 }
 , Ground = ({ name, url, rot, pos }) => {
   const gltf = useLoader(GLTFLoader, url )
@@ -196,13 +205,13 @@ const CameraControls = () => {
           <Buildings
             pos={[0, 0, 0]}
             name="Buildings"
-            url="/models/model-color.glb"
+            url="/models/buildings-v2.glb"
             showLabels={sidebarData.visible === "buildings"}
             opacity={sidebarData.opacity/100} />
           <Ground
-            pos={[0, .75, 0]}
+            pos={[0, 0, 0]}
             name="Ground"
-            url="/models/ground.glb" />
+            url="/models/ground-v2.glb" />
           {/*{
             siteAssets && <SiteAssets
                 // pos={[-50, 0, 0]}
