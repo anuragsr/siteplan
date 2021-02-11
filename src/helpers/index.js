@@ -1,5 +1,6 @@
+const wc = window.console
 module.exports = {
   // l: () => {} // noop,
-  l: console.log.bind(window.console),
-  cl: console.clear.bind(window.console),
+  l: console.log.bind(wc),
+  cl: console.clear.bind(wc),
 }

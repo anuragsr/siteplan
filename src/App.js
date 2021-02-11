@@ -4,12 +4,16 @@ import { Html, OrthographicCamera } from '@react-three/drei'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import * as THREE from 'three'
+import assetData from './helpers/assetData'
 
 // Debug
 import DatGui, { DatBoolean, DatString } from 'react-dat-gui'
 import 'react-dat-gui/dist/index.css'
 import FPSStats from 'react-fps-stats'
-import { l } from './helpers/index'
+import { l, point3D, point3DHover } from './helpers/index'
+
+// SCSS
+import './scss/app.scss'
 
 // Make OrbitControls known as <orbitControls />
 extend({ OrbitControls })
@@ -47,7 +51,7 @@ const CameraControls = () => {
     controls.current.enableKeys = false;
   }
 
-  inspect()
+  // inspect()
 
   // Ref to the controls, so that we can update them on every frame using useFrame
   const controls = useRef()
@@ -86,9 +90,10 @@ const CameraControls = () => {
     </mesh>
   )
 }
-, PointLightWithHelper = ({ color, pos, visible }) => {
+, PointLightWithHelper = ({ color, position, visible, intensity }) => {
+  const lightProps = { color, position, intensity }
   return (
-    <pointLight position={pos} color={color}>
+    <pointLight {...lightProps}>
       <mesh visible={visible}>
         <sphereBufferGeometry/>
         <meshStandardMaterial color={0x0000ff} />
@@ -132,7 +137,7 @@ const CameraControls = () => {
 , Buildings = ({ name, url, pos, opacity, showLabels, guiData, setGuiData }) => {
   // l("Building Labels", showLabels)
   const gltf = useLoader(GLTFLoader, url)
-  // l(gltf.scene)
+  l(gltf.scene)
   // document.getElementById("overlay").classList.add("closed")
 
   // Set name, original emissive color for highlight
@@ -155,18 +160,6 @@ const CameraControls = () => {
           <React.Fragment key={idx}>
             {child.type === 'Group' && <BuildingMeshGroup {...childProps} />}
             {child.type === 'Mesh' && <BuildingMesh {...childProps} />}
-            {showLabels && <Html center position={child.position}>
-              <div className="css3D" id={`ann${idx}`}>
-                <div className="pos-relative">
-                  <div className="name">{child.name}</div>
-                  <div className="ctn-point pos-relative">
-                    <img src={point3D} alt=""/>
-                    <img src={point3DHover} alt=""/>
-                  </div>
-                  <div className="line"></div>
-                </div>
-              </div>
-            </Html>}
           </React.Fragment>
         )
       })
@@ -176,7 +169,6 @@ const CameraControls = () => {
 , Ground = ({ name, url, setGuiData }) => {
   const gltf = useLoader(GLTFLoader, url )
   // l(gltf.scene)
-  // document.getElementById("overlay").classList.add("closed")
 
   return <primitive name={name}
     object={gltf.scene}
@@ -185,80 +177,107 @@ const CameraControls = () => {
       setGuiData(prev => ({ ...prev, activeObject: "None" }))
     }}/>
 }
+, SiteAssets = ({ name, siteAssets, showLabels }) => {
+  // l("Asset Labels", siteAssets, showLabels)
+
+  return (
+    <group name={name}>{
+      showLabels && siteAssets.map((asset, idx) => (
+        // <Html key={idx} center position={dummyCoords[idx]}>
+        <Html key={idx} center position={asset.coordinates}>
+          <div className="css3D" id={`ann${idx}`}>
+            <div className="pos-relative">
+              <div className="name">{asset.name}</div>
+              <div className="ctn-point pos-relative">
+                <img src="/assets/images/Group 23@1X.png" alt="" />
+                <img src="/assets/images/Group 27@1X.png" alt="" />
+              </div>
+              <div className="line"></div>
+            </div>
+          </div>
+        </Html>
+      ))
+    }</group>
+  )
+}
 , App = () => {
   const [guiData, setGuiData] = useState({ 
     activeObject: "None",
     showHelpers: true
   })
-  , [sidebarData, setSidebarData] = useState({
+  , [viewData, setViewData] = useState({
     opacity: 100, greyscale: false, visible: "none"
   })
   , handleChange = (value, property) => {
-    setSidebarData(prev => ({ ...prev, [property]: value }))
+    setViewData(prev => ({ ...prev, [property]: value }))
   }
   , showItems = (e, type) => {
     e.preventDefault()
-    setSidebarData(prev => ({ ...prev, visible: type }))
+    setViewData(prev => ({ ...prev, visible: type }))
   }
+  , { siteAssets } = assetData
 
-  return (
-    <>
-      {guiData.showHelpers && <FPSStats left={10} top={10}/>}
-      <DatGui data={guiData} onUpdate={setGuiData}>
-        <DatBoolean path='showHelpers' label='Show Helpers' />
-        <DatString path='activeObject' label='Active Object' />
-      </DatGui>
-      <Canvas>
-        <OrthographicCamera
-          makeDefault
-          position={[250, 250, 250]}
-          zoom={10}
-          near={0}
-          far={5000}/>
-        <ambientLight intensity={.1}/>
-        <PointLightWithHelper visible={guiData.showHelpers} color={0xffffff} pos={[150, 75, 150]}/>
-        <gridHelper args={[1000, 100]} visible={guiData.showHelpers} />
-        <axesHelper args={[500]} visible={guiData.showHelpers} />
-        <pointLight position={[10, 10, 10]} />
-        <CameraControls />
-        <Suspense fallback={<Box position={[0, 0, 0]} />}>
-          <Buildings
-            name="Buildings"
-            url="/models/buildings-v2.glb"
-            showLabels={sidebarData.visible === "buildings"}
-            opacity={sidebarData.opacity/100} 
-            guiData={guiData}
-            setGuiData={setGuiData}/>
-          <Ground
-            name="Ground"
-            url="/models/ground-v2.glb" 
-            setGuiData={setGuiData}
-            />
-          {/*{
-            siteAssets && <SiteAssets
-                // pos={[-50, 0, 0]}
-                showLabels={sidebarData.visible === "assets"}
-                name="Site Assets"
-                siteAssets={siteAssets}/>
-          }
-          {
-            siteTempSensors && <SiteTempSensors
-                // pos={[-50, 0, 0]}
-                name="Site Temp Sensors"
-                showLabels={sidebarData.visible === "temp"}
-                siteTempSensors={siteTempSensors}/>
-          }
-          {
-            siteTempSensors && <SiteReactors
-                // pos={[-50, 0, 0]}
-                name="Site Reactors"
-                showLabels={sidebarData.visible === "react"}
-                siteReactors={siteTempSensors}/>
-          }*/}
-        </Suspense>
-      </Canvas>
-    </>
-  )
+  return (<>
+    {guiData.showHelpers && <FPSStats bottom={50} left={50} top={"unset"}/>}
+    <DatGui data={guiData} onUpdate={setGuiData}>
+      <DatBoolean path='showHelpers' label='Show Helpers' />
+      <DatString path='activeObject' label='Active Object' />
+    </DatGui>
+    <Canvas>
+      <OrthographicCamera
+        makeDefault
+        position={[250, 250, 250]}
+        zoom={10}
+        near={0}
+        far={5000}/>
+      <ambientLight intensity={.1}/>
+      <PointLightWithHelper 
+        visible={guiData.showHelpers} 
+        color={0xffffff} 
+        intensity={1}
+        position={[150, 75, 150]}
+        />
+      <gridHelper args={[1000, 100]} visible={guiData.showHelpers} />
+      <axesHelper args={[500]} visible={guiData.showHelpers} />        
+      <CameraControls />
+      <Suspense fallback={<Box position={[0, 0, 0]} />}>
+        <Buildings
+          name="Buildings"
+          url="/assets/models/buildings-v2.glb"
+          showLabels={viewData.visible === "buildings"}
+          opacity={viewData.opacity/100} 
+          guiData={guiData}
+          setGuiData={setGuiData}/>
+        <Ground
+          name="Ground"
+          url="/assets/models/ground-v2.glb" 
+          setGuiData={setGuiData}
+          />
+        {
+          siteAssets && <SiteAssets
+            // showLabels={viewData.visible === "assets"}
+            showLabels={true}
+            name="Site Assets"
+            siteAssets={siteAssets} />
+        }
+        {/*
+        {
+          siteTempSensors && <SiteTempSensors
+              // pos={[-50, 0, 0]}
+              name="Site Temp Sensors"
+              showLabels={viewData.visible === "temp"}
+              siteTempSensors={siteTempSensors}/>
+        }
+        {
+          siteTempSensors && <SiteReactors
+              // pos={[-50, 0, 0]}
+              name="Site Reactors"
+              showLabels={viewData.visible === "react"}
+              siteReactors={siteTempSensors}/>
+        }*/}
+      </Suspense>
+    </Canvas>
+  </>)
 }
 
 export default App
