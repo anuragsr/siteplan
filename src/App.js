@@ -6,7 +6,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import * as THREE from 'three'
 
 // Debug
-import DatGui, { DatBoolean } from 'react-dat-gui'
+import DatGui, { DatBoolean, DatString } from 'react-dat-gui'
 import 'react-dat-gui/dist/index.css'
 import FPSStats from 'react-fps-stats'
 import { l } from './helpers/index'
@@ -97,47 +97,64 @@ const CameraControls = () => {
   )
 }
 , BuildingMeshGroup = props => {
+  const { name, guiData, setGuiData, children, opacity } = props
   return (
-    <group scale={props.scale} name={props.name} rotation={props.rotation} position={props.position}>{
-      props.children.map((child, idx) => (
-        <mesh key={idx} {...child}>
-          <meshStandardMaterial {...child.material} transparent opacity={props.opacity}/>
-        </mesh>
-      ))
+    <group {...props}>{
+      children.map((child, idx) => {
+        return (
+          <mesh key={idx} {...child}
+            onPointerOver={(event) => {
+              // l("over group", event.object.name, event.object.parent.name)
+              event.stopPropagation()
+              setGuiData(prev => ({ ...prev, activeObject: event.object.parent.name }))
+            }}>
+            <meshStandardMaterial {...child.material} transparent opacity={opacity}
+              emissive={guiData.activeObject === name ? 0xff0000 : child.material.origEmissive} />
+          </mesh>)
+      })
     }</group>
   )
 }
-, Buildings = ({ name, url, pos, opacity, showLabels }) => {
+, BuildingMesh = props => {
+  const { name, guiData, setGuiData, opacity, material } = props
+  return (
+    <mesh {...props}
+      onPointerOver={(event) => {
+        // l("over mesh", event.object.name, event.object.name)
+        event.stopPropagation()
+        setGuiData(prev => ({ ...prev, activeObject: event.object.name }))
+      }}>
+      <meshStandardMaterial {...material} transparent opacity={opacity}
+        emissive={guiData.activeObject === name ? 0xff0000 : material.origEmissive} />
+    </mesh>
+  )
+}
+, Buildings = ({ name, url, pos, opacity, showLabels, guiData, setGuiData }) => {
   // l("Building Labels", showLabels)
   const gltf = useLoader(GLTFLoader, url)
-  gltf.scene.name = name
-  l(gltf.scene)
+  // l(gltf.scene)
   // document.getElementById("overlay").classList.add("closed")
 
+  // Set name, original emissive color for highlight
+  gltf.scene.name = name
+  gltf.scene.children.forEach(child => {
+    if (child.type === 'Group'){
+      child.children.forEach(subchild => {
+        subchild.material.origEmissive = subchild.material.emissive
+      })
+    } else {
+      child.material.origEmissive = child.material.emissive
+    }
+  })
+  
   return (
-    <primitive
-      name={name}
-      // rotation={rot}
-      position={pos}
-      // onPointerOver={(event) => l("over", event.object)}
-      // onPointerOut={(event) => l("out", event.object)}
-      object={gltf.scene}
-    />
-  )
-    {/*<group name={name} position={pos}>{
+    <group name={name}>{
       gltf.scene.children.map((child, idx) => {
-        // const origColor = child.material ? child.material.color : 0xffffff
-        // const origEmissive = child.material ? child.material.emissive : 0xffffff
+        const childProps = { ...child, opacity, guiData, setGuiData }
         return (
           <React.Fragment key={idx}>
-            <BuildingMeshGroup
-              {...child}
-              // key={idx}
-              opacity={opacity}
-              // idx={idx}
-              // origColor={origColor}
-              // origEmissive={origEmissive}
-            />
+            {child.type === 'Group' && <BuildingMeshGroup {...childProps} />}
+            {child.type === 'Mesh' && <BuildingMesh {...childProps} />}
             {showLabels && <Html center position={child.position}>
               <div className="css3D" id={`ann${idx}`}>
                 <div className="pos-relative">
@@ -153,29 +170,31 @@ const CameraControls = () => {
           </React.Fragment>
         )
       })
-    }</group>*/}
+    }</group>
+  )
 }
-, Ground = ({ name, url, rot, pos }) => {
+, Ground = ({ name, url, setGuiData }) => {
   const gltf = useLoader(GLTFLoader, url )
-  l(gltf.scene)
+  // l(gltf.scene)
   // document.getElementById("overlay").classList.add("closed")
 
-  return <primitive
-    name={name}
-    rotation={rot}
-    position={pos}
+  return <primitive name={name}
     object={gltf.scene}
-  />
+    onPointerOver={() => {
+      // l("over ground", event.object.name, event.object.parent.name)
+      setGuiData(prev => ({ ...prev, activeObject: "None" }))
+    }}/>
 }
 , App = () => {
-  const [guiData, setGuiData] = useState({ showHelpers: true })
+  const [guiData, setGuiData] = useState({ 
+    activeObject: "None",
+    showHelpers: true
+  })
   , [sidebarData, setSidebarData] = useState({
-    opacity: 90, greyscale: false, visible: "none"
+    opacity: 100, greyscale: false, visible: "none"
   })
   , handleChange = (value, property) => {
-    setSidebarData(prev => ({
-      ...prev, [property]: value
-    }))
+    setSidebarData(prev => ({ ...prev, [property]: value }))
   }
   , showItems = (e, type) => {
     e.preventDefault()
@@ -187,12 +206,13 @@ const CameraControls = () => {
       {guiData.showHelpers && <FPSStats left={10} top={10}/>}
       <DatGui data={guiData} onUpdate={setGuiData}>
         <DatBoolean path='showHelpers' label='Show Helpers' />
+        <DatString path='activeObject' label='Active Object' />
       </DatGui>
       <Canvas>
         <OrthographicCamera
           makeDefault
-          // aspect={innerWidth/innerHeight}
           position={[250, 250, 250]}
+          zoom={10}
           near={0}
           far={5000}/>
         <ambientLight intensity={.1}/>
@@ -203,15 +223,17 @@ const CameraControls = () => {
         <CameraControls />
         <Suspense fallback={<Box position={[0, 0, 0]} />}>
           <Buildings
-            pos={[0, 0, 0]}
             name="Buildings"
             url="/models/buildings-v2.glb"
             showLabels={sidebarData.visible === "buildings"}
-            opacity={sidebarData.opacity/100} />
+            opacity={sidebarData.opacity/100} 
+            guiData={guiData}
+            setGuiData={setGuiData}/>
           <Ground
-            pos={[0, 0, 0]}
             name="Ground"
-            url="/models/ground-v2.glb" />
+            url="/models/ground-v2.glb" 
+            setGuiData={setGuiData}
+            />
           {/*{
             siteAssets && <SiteAssets
                 // pos={[-50, 0, 0]}
