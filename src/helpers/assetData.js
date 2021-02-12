@@ -67,7 +67,3 @@ const assetData = {
 
 export default assetData
 
-
-
-
-

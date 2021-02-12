@@ -4,6 +4,8 @@ import { Html, OrthographicCamera } from '@react-three/drei'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import * as THREE from 'three'
+import Slider from 'rc-slider'
+import Switch from 'rc-switch'
 import assetData from './helpers/assetData'
 
 // Debug
@@ -212,12 +214,10 @@ const CameraControls = () => {
   )
 }
 , App = () => {
-  const [guiData, setGuiData] = useState({ 
-    activeObject: "None",
-    showHelpers: true
-  })
+  const [guiData, setGuiData] = useState({ activeObject: "None", showHelpers: true })
   , [viewData, setViewData] = useState({
-    opacity: 100, greyscale: false, visible: "buildings"
+    opacity: 100, greyscale: false, 
+    visible: "buildings", toggleOpts: false
   })
   , handleChange = (value, property) => {
     setViewData(prev => ({ ...prev, [property]: value }))
@@ -234,7 +234,7 @@ const CameraControls = () => {
       <DatBoolean path='showHelpers' label='Show Helpers' />
       <DatString path='activeObject' label='Active Object' />
     </DatGui>
-    <Canvas>
+    <Canvas className={`canvas${viewData.greyscale ? " gray" : ""}`}>
       <OrthographicCamera
         makeDefault
         position={[250, 250, 250]}
@@ -265,6 +265,68 @@ const CameraControls = () => {
         <Annotation name="reactors" showLabels={viewData.visible === "react"} assets={reactors}  />
       </Suspense>
     </Canvas>
+    <button 
+      onClick={() => setViewData(prev => ({ ...prev, toggleOpts: !prev.toggleOpts }))} 
+      className={`btn-3d-toggle${viewData.toggleOpts ? " open" : ""}`}>
+      <div></div>
+    </button>
+    <div className="flex-y asset-list--wrapper">
+      <div className="flex-x space-between align-items-center">
+        <div className="asset-list--item ctn-slider flex-x space-between align-items-center">
+          <span>Building Transparency</span>
+          <button
+            className="btn btn-sm btn-light mr-3 flex-x center"
+            onClick={() => handleChange(Math.max(0, viewData.opacity - 10), "opacity")}
+          >-</button>
+          <Slider
+            trackStyle={{ backgroundColor: '#14ACEF', height: 5 }}
+            handleStyle={{
+              borderColor: '#14ACEF',
+              backgroundColor: '#14ACEF',
+              height: 14,
+              width: 14,
+              marginTop: -5,
+            }}
+            railStyle={{ backgroundColor: '#fff', height: 5 }}
+            value={viewData.opacity}
+            onChange={value => handleChange(value, "opacity")}
+          />
+          <button
+            className="btn btn-sm btn-light ml-3 flex-x center"
+            onClick={() => handleChange(Math.min(viewData.opacity + 10, 100), "opacity")}
+          >+</button>
+        </div>
+        <div className="asset-list--item ctn-switch flex-y center">
+          Greyscale <Switch value={viewData.greyscale} onChange={value => handleChange(value, "greyscale")}/>
+        </div>
+      </div>
+      <div className="flex-y asset-list-container">{
+        buildings.map((asset, i) => (
+          <div
+            className={
+              // `asset-list--item${activeAsset === asset.assetId && " active"}`
+              `asset-list--item flex-x space-between align-items-center cursor-pointer`
+            }
+            key={i}
+            // onMouseEnter={() => {
+            //   if (activeAsset !== asset.assetId) {
+            //     dispatch(actions.setActiveAsset(asset.assetId))
+            //     dispatch(actions.setActiveAssetName(asset.name))
+            //   }
+            // }}
+            // onMouseLeave={() => {
+            //   dispatch(actions.setActiveAsset(null))
+            //   dispatch(actions.setActiveAssetName(""))
+            // }}
+          >
+            <div className="ctn-name">
+              <img src='/assets/images/building.png' alt="" />{asset.name}
+            </div>
+            <img height="5" src='/assets/images/arrow.png' alt="" />
+          </div>
+        ))
+      }</div>     
+    </div>
     <div className="ctn-buttons-bottom">
       <a href="#" className={`${viewData.visible === "buildings" ? "active" : ""}`} onClick={e => { showItems(e, "buildings") }}>Buildings</a>
       <a href="#" className={`${viewData.visible === "temp" ? "active" : ""}`} onClick={e => { showItems(e, "temp") }}>Temperature Sensors</a>
