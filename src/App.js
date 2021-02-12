@@ -177,15 +177,14 @@ const CameraControls = () => {
       setGuiData(prev => ({ ...prev, activeObject: "None" }))
     }}/>
 }
-, SiteAssets = ({ name, siteAssets, showLabels }) => {
+, SiteAssets = ({ name, assets, showLabels }) => {
   // l("Asset Labels", siteAssets, showLabels)
 
   return (
     <group name={name}>{
-      showLabels && siteAssets.map((asset, idx) => (
-        // <Html key={idx} center position={dummyCoords[idx]}>
+      showLabels && assets.map((asset, idx) => (
         <Html key={idx} center position={asset.coordinates}>
-          <div className="css3D" id={`ann${idx}`}>
+          <div className="css3D ann-assets" id={`ann${idx}`}>
             <div className="pos-relative">
               <div className="name">{asset.name}</div>
               <div className="ctn-point pos-relative">
@@ -215,7 +214,7 @@ const CameraControls = () => {
     e.preventDefault()
     setViewData(prev => ({ ...prev, visible: type }))
   }
-  , { siteAssets } = assetData
+  , { buildings } = assetData
 
   return (<>
     {guiData.showHelpers && <FPSStats bottom={50} left={50} top={"unset"}/>}
@@ -235,7 +234,7 @@ const CameraControls = () => {
         visible={guiData.showHelpers} 
         color={0xffffff} 
         intensity={1}
-        position={[150, 75, 150]}
+        position={[70, 50, 5]}
         />
       <gridHelper args={[1000, 100]} visible={guiData.showHelpers} />
       <axesHelper args={[500]} visible={guiData.showHelpers} />        
@@ -244,7 +243,6 @@ const CameraControls = () => {
         <Buildings
           name="Buildings"
           url="/assets/models/buildings-v2.glb"
-          showLabels={viewData.visible === "buildings"}
           opacity={viewData.opacity/100} 
           guiData={guiData}
           setGuiData={setGuiData}/>
@@ -254,11 +252,11 @@ const CameraControls = () => {
           setGuiData={setGuiData}
           />
         {
-          siteAssets && <SiteAssets
-            // showLabels={viewData.visible === "assets"}
-            showLabels={true}
+          buildings && <SiteAssets
+            showLabels={viewData.visible === "buildings"}
+            // showLabels={true}
             name="Site Assets"
-            siteAssets={siteAssets} />
+            assets={buildings} />
         }
         {/*
         {
@@ -277,6 +275,13 @@ const CameraControls = () => {
         }*/}
       </Suspense>
     </Canvas>
+    <div className="ctn-buttons-bottom">
+      <a href="#" className={`${viewData.visible === "buildings" ? "active" : ""}`} onClick={e => { showItems(e, "buildings") }}>Buildings</a>
+      <a href="#" className={`${viewData.visible === "assets" ? "active" : ""}`} onClick={e => { showItems(e, "assets") }}>Assets</a>
+      <a href="#" className={`${viewData.visible === "temp" ? "active" : ""}`} onClick={e => { showItems(e, "temp") }}>Temperature Sensors</a>
+      <a href="#" className={`${viewData.visible === "react" ? "active" : ""}`} onClick={e => { showItems(e, "react") }}>Reactors</a>
+      <a href="#" className={`${viewData.visible === "none" ? "active" : ""}`} onClick={e => { showItems(e, "none") }}>Clear</a>
+    </div>
   </>)
 }
 

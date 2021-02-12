@@ -1,3 +1,9 @@
+// vars
+$acc: #14ACEF;
+$w: #fff;
+$b: #000;
+$tr: transparent;
+
 html, body, #root{ height: 100%; width: 100%; }
 body {
   margin: 0;
@@ -5,27 +11,7 @@ body {
 }
 
 .react-dat-gui{ z-index: 1; }
-
-.css3D{
-  // outline: 1px solid #A70300;  
-  // &#ann3{ 
-  &#ann0{ 
-    .line{ transform: rotate(-49deg); }
-    .name{ left: 90px; top: -110px; }
-  }
-  // &#ann4{ 
-  &#ann1{ 
-    .line{ transform: rotate(25deg); }
-    .name{ left: 122px; top: 65px; }
-  }
-  // &#ann22{ 
-  //   .line{ transform: rotate(15deg); }
-  //   .name{ left: 130px; top: 45px; }
-  // }
-  // &#ann23{ 
-  //   .line{ transform: rotate(-145deg); }
-  //   .name{ left: -180px; top: -87px; }
-  // }
+.css3D{  
   .ctn-point{ 
     img{ 
       position: absolute; top: 0; left: 0; 
@@ -41,12 +27,12 @@ body {
     top: 13px;
     left: 12px;
     z-index: -1;
-    height: 2px;
+    height: 1px;
     width: 122px; 
-    background: rgba(#000, .8);    
+    background: rgba($w, .8);    
     transform-origin: left center;
     transform: rotate(-43deg);
-    transition: all .1s;
+    transition: all .3s;
   }
   .name{
     opacity: .7;
@@ -57,7 +43,7 @@ body {
     padding: 5px 10px;
     background: rgba(#000, .8);    
     color: white;
-    transition: all .1s;
+    transition: all .3s;
     // font-size: 14px;
     &.active, &:hover{ 
       background: rgba(#A70300, 1);
@@ -72,6 +58,78 @@ body {
         img:first-of-type{ opacity: 0; }
         img:last-of-type{ opacity: 1; }
       }
+    }
+  }
+  &.ann-assets{
+    &#ann0{ 
+      .line{ transform: rotate(-49deg); }
+      .name{ 
+        left: 90px; top: -105px; 
+        &:hover{ &~.line{ transform: rotate(-51deg); } }
+      }
+    }
+    &#ann1{ 
+      .line{ transform: rotate(-25deg); }
+      .name{ 
+        left: 122px; top: -65px; 
+        &:hover{ &~.line{ transform: rotate(-26deg); } }
+      }
+    }
+    &#ann2{ 
+      .line{ transform: rotate(145deg); }
+      .name{ 
+        left: -162px; top: 80px; 
+        &:hover{ &~.line{ transform: rotate(144deg); } }
+      }
+    }
+    &#ann3{ 
+      .line{ transform: rotate(43deg); }
+      .name{ 
+        left: 100px; top: 95px; 
+        &:hover{ &~.line{ transform: rotate(44deg); } }
+      }
+    }
+    &#ann4{ 
+      .line{ transform: rotate(43deg); }
+      .name{ 
+        left: 100px; top: 95px; 
+        &:hover{ &~.line{ transform: rotate(44deg); } }
+      }
+    }
+    &#ann5{ 
+      .line{ transform: rotate(-43deg); }
+      .name{ 
+        left: 100px; top: -97px; 
+        &:hover{ &~.line{ transform: rotate(-44deg); } }
+      }
+    }
+  }
+}
+
+.ctn-buttons-bottom{
+  position: fixed;
+  bottom: 50px;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+  transition: all .5s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  a{
+    border-radius: 2px;
+    background: rgba(#050719, .3);
+    padding: 10px 15px;
+    margin: 5px;
+    pointer-events: auto;
+    color: $w;
+    border: 1px solid $tr;
+    font-weight: bold;
+    text-decoration: none;
+    &:hover, &.active{
+      background: $w;
+      color: $acc;
+      border: 1px solid $acc;
     }
   }
 }
