@@ -108,11 +108,12 @@ const CameraControls = () => {
       children.map((child, idx) => {
         return (
           <mesh key={idx} {...child}
-            onPointerOver={(event) => {
-              // l("over group", event.object.name, event.object.parent.name)
-              event.stopPropagation()
-              setGuiData(prev => ({ ...prev, activeObject: event.object.parent.name }))
-            }}>
+            // onPointerOver={(event) => {
+            //   // l("over group", event.object.name, event.object.parent.name)
+            //   event.stopPropagation()
+            //   setGuiData(prev => ({ ...prev, activeObject: event.object.parent.name }))
+            // }}
+            >
             <meshStandardMaterial {...child.material} transparent opacity={opacity}
               emissive={guiData.activeObject === name ? 0xff0000 : child.material.origEmissive} />
           </mesh>)
@@ -124,20 +125,23 @@ const CameraControls = () => {
   const { name, guiData, setGuiData, opacity, material } = props
   return (
     <mesh {...props}
-      onPointerOver={(event) => {
-        // l("over mesh", event.object.name, event.object.name)
-        event.stopPropagation()
-        setGuiData(prev => ({ ...prev, activeObject: event.object.name }))
-      }}>
+      // onPointerOver={(event) => {
+      //   // l("over mesh", event.object.name, event.object.name)
+      //   event.stopPropagation()
+      //   setGuiData(prev => ({ ...prev, activeObject: event.object.name }))
+      // }}
+      >
       <meshStandardMaterial {...material} transparent opacity={opacity}
         emissive={guiData.activeObject === name ? 0xff0000 : material.origEmissive} />
     </mesh>
   )
 }
-, Buildings = ({ name, url, pos, opacity, showLabels, guiData, setGuiData }) => {
-  // l("Building Labels", showLabels)
+, Buildings = props => {
+  const { name, url, pos, opacity, showLabels, assets, guiData, setGuiData } = props
+  , annotationProps = { name: "buildings", showLabels, assets }
+
   const gltf = useLoader(GLTFLoader, url)
-  l(gltf.scene)
+  // l(gltf.scene)
   // document.getElementById("overlay").classList.add("closed")
 
   // Set name, original emissive color for highlight
@@ -153,50 +157,58 @@ const CameraControls = () => {
   })
   
   return (
-    <group name={name}>{
-      gltf.scene.children.map((child, idx) => {
-        const childProps = { ...child, opacity, guiData, setGuiData }
-        return (
-          <React.Fragment key={idx}>
-            {child.type === 'Group' && <BuildingMeshGroup {...childProps} />}
-            {child.type === 'Mesh' && <BuildingMesh {...childProps} />}
-          </React.Fragment>
-        )
-      })
-    }</group>
+    <group name={name}>{gltf.scene.children.map((child, idx) => {
+      const childProps = { ...child, opacity, guiData, setGuiData }
+      return (
+        <React.Fragment key={idx}>
+          {child.type === 'Group' && <BuildingMeshGroup {...childProps} />}
+          {child.type === 'Mesh' && <BuildingMesh {...childProps} />}            
+        </React.Fragment>
+      )})}
+      <Annotation {...annotationProps} />
+    </group>
   )
 }
-, Ground = ({ name, url, setGuiData }) => {
+, Ground = ({ name, url, opacity }) => {
   const gltf = useLoader(GLTFLoader, url )
   // l(gltf.scene)
 
+  gltf.scene.children.forEach(child => {
+    if (child.name === 'ground-map') child.material.opacity = opacity
+  })
+
   return <primitive name={name}
     object={gltf.scene}
-    onPointerOver={() => {
-      // l("over ground", event.object.name, event.object.parent.name)
-      setGuiData(prev => ({ ...prev, activeObject: "None" }))
-    }}/>
+    // onPointerOver={() => {
+    //   // l("over ground", event.object.name, event.object.parent.name)
+    //   setGuiData(prev => ({ ...prev, activeObject: "None" }))
+    // }}
+    />
 }
-, SiteAssets = ({ name, assets, showLabels }) => {
-  // l("Asset Labels", siteAssets, showLabels)
+, Annotation = ({ name, assets, showLabels }) => {
+  // l(name, assets, showLabels)
+  let className
+  switch(name){
+    case "buildings": className = "css3D ann-build"; break
+    case "temp": className = "css3D ann-temp"; break
+    default: className = "css3D ann-react"; break
+  }
 
   return (
-    <group name={name}>{
-      showLabels && assets.map((asset, idx) => (
-        <Html key={idx} center position={asset.coordinates}>
-          <div className="css3D ann-assets" id={`ann${idx}`}>
-            <div className="pos-relative">
-              <div className="name">{asset.name}</div>
-              <div className="ctn-point pos-relative">
-                <img src="/assets/images/Group 23@1X.png" alt="" />
-                <img src="/assets/images/Group 27@1X.png" alt="" />
-              </div>
-              <div className="line"></div>
+    <group>{showLabels && assets.map((asset, idx) => (
+      <Html key={idx} center position={asset.coordinates}>
+        <div className={className} id={`ann${idx}`}>
+          <div className="pos-relative">
+            <div className="name">{asset.name}</div>
+            <div className="ctn-point pos-relative">
+              <img src="/assets/images/Group 23@1X.png" alt="" />
+              <img src="/assets/images/Group 27@1X.png" alt="" />
             </div>
+            <div className="line"></div>
           </div>
-        </Html>
-      ))
-    }</group>
+        </div>
+      </Html>
+    ))}</group>
   )
 }
 , App = () => {
@@ -205,7 +217,7 @@ const CameraControls = () => {
     showHelpers: true
   })
   , [viewData, setViewData] = useState({
-    opacity: 100, greyscale: false, visible: "none"
+    opacity: 100, greyscale: false, visible: "buildings"
   })
   , handleChange = (value, property) => {
     setViewData(prev => ({ ...prev, [property]: value }))
@@ -214,7 +226,7 @@ const CameraControls = () => {
     e.preventDefault()
     setViewData(prev => ({ ...prev, visible: type }))
   }
-  , { buildings } = assetData
+  , { buildings, temp, reactors } = assetData
 
   return (<>
     {guiData.showHelpers && <FPSStats bottom={50} left={50} top={"unset"}/>}
@@ -241,43 +253,20 @@ const CameraControls = () => {
       <CameraControls />
       <Suspense fallback={<Box position={[0, 0, 0]} />}>
         <Buildings
+          url="/assets/models/buildings.glb"
           name="Buildings"
-          url="/assets/models/buildings-v2.glb"
           opacity={viewData.opacity/100} 
+          showLabels={viewData.visible === "buildings"}
+          assets={buildings}
           guiData={guiData}
           setGuiData={setGuiData}/>
-        <Ground
-          name="Ground"
-          url="/assets/models/ground-v2.glb" 
-          setGuiData={setGuiData}
-          />
-        {
-          buildings && <SiteAssets
-            showLabels={viewData.visible === "buildings"}
-            // showLabels={true}
-            name="Site Assets"
-            assets={buildings} />
-        }
-        {/*
-        {
-          siteTempSensors && <SiteTempSensors
-              // pos={[-50, 0, 0]}
-              name="Site Temp Sensors"
-              showLabels={viewData.visible === "temp"}
-              siteTempSensors={siteTempSensors}/>
-        }
-        {
-          siteTempSensors && <SiteReactors
-              // pos={[-50, 0, 0]}
-              name="Site Reactors"
-              showLabels={viewData.visible === "react"}
-              siteReactors={siteTempSensors}/>
-        }*/}
+        <Ground name="Ground" url="/assets/models/ground.glb" opacity={.8}/>
+        <Annotation name="temp" showLabels={viewData.visible === "temp"} assets={temp}  />
+        <Annotation name="reactors" showLabels={viewData.visible === "react"} assets={reactors}  />
       </Suspense>
     </Canvas>
     <div className="ctn-buttons-bottom">
       <a href="#" className={`${viewData.visible === "buildings" ? "active" : ""}`} onClick={e => { showItems(e, "buildings") }}>Buildings</a>
-      <a href="#" className={`${viewData.visible === "assets" ? "active" : ""}`} onClick={e => { showItems(e, "assets") }}>Assets</a>
       <a href="#" className={`${viewData.visible === "temp" ? "active" : ""}`} onClick={e => { showItems(e, "temp") }}>Temperature Sensors</a>
       <a href="#" className={`${viewData.visible === "react" ? "active" : ""}`} onClick={e => { showItems(e, "react") }}>Reactors</a>
       <a href="#" className={`${viewData.visible === "none" ? "active" : ""}`} onClick={e => { showItems(e, "none") }}>Clear</a>
