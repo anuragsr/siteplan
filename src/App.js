@@ -6,6 +6,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import * as THREE from 'three'
 import Slider from 'rc-slider'
 import Switch from 'rc-switch'
+import NProgress from 'nprogress'
 import assetData from './helpers/assetData'
 
 // Debug
@@ -38,18 +39,14 @@ const CameraControls = () => {
     controls.current.maxPolarAngle = Math.PI / 4 + .5;
 
     // For Orthographic camera
-    controls.current.minZoom = 5.5;
-    controls.current.maxZoom = 10;
-
-    // For perspective camera
-    // controls.current.minDistance = 150;
-    // controls.current.maxDistance = 250;
+    controls.current.minZoom = 12;
+    controls.current.maxZoom = 24;
 
     controls.current.enableDamping = true;
     controls.current.dampingFactor = 0.05;
-    // controls.current.enablePan = false;
     controls.current.autoRotate = true;
     controls.current.autoRotateSpeed = .2;
+    controls.current.enablePan = false;
     controls.current.enableKeys = false;
   }
 
@@ -57,12 +54,8 @@ const CameraControls = () => {
 
   // Ref to the controls, so that we can update them on every frame using useFrame
   const controls = useRef()
-  useFrame(() => {
-    controls.current.update()
-    // scene.rotation.y+=0.00025
-  })
-
-  // controls.current && setControlParams()
+  useFrame(() => { controls.current.update()})
+  controls.current && setControlParams()
 
   return <orbitControls ref={controls} args={[camera, domElement]} />
 }
@@ -140,11 +133,12 @@ const CameraControls = () => {
 }
 , Buildings = props => {
   const { name, url, position, opacity, showLabels, assets, guiData, setGuiData } = props
-  , annotationProps = { name: "buildings", showLabels, assets, guiData, setGuiData }
+  , annotationProps = { name: "buildings", position:[0, 0, 0], showLabels, assets, guiData, setGuiData }
   , gltf = useLoader(GLTFLoader, url)
 
   // l(gltf.scene)
-  // document.getElementById("overlay").classList.add("closed")
+  NProgress.done()
+  document.getElementById("enter").classList.add("appear")
 
   // Set name, original emissive color for highlight
   gltf.scene.name = name
@@ -176,7 +170,11 @@ const CameraControls = () => {
   // l(gltf.scene)
 
   gltf.scene.children.forEach(child => {
-    if (child.name === 'ground-map') child.material.opacity = opacity
+    if (child.name === 'ground-map'){
+      child.material.opacity = opacity
+      child.material.shininess = 0
+      child.material.roughness = 100
+    }
   })
 
   return <primitive name={name}
@@ -188,7 +186,7 @@ const CameraControls = () => {
     // }}
     />
 }
-, Annotation = ({ name, assets, showLabels, guiData, setGuiData }) => {
+, Annotation = ({ name, position, assets, showLabels, guiData, setGuiData }) => {
   // l(name, assets, showLabels)
   let className
   switch(name){
@@ -198,7 +196,7 @@ const CameraControls = () => {
   }
 
   return (
-    <group>{showLabels && assets.map((asset, idx) => (
+    <group position={position}>{showLabels && assets.map((asset, idx) => (
       <Html key={idx} center position={asset.coordinates}>
         <div className={className} id={`ann${idx}`}>
           <div className="pos-relative">
@@ -211,8 +209,8 @@ const CameraControls = () => {
               onMouseOut={() => setGuiData(prev => ({ ...prev, activeObject: "None" }))}
             >{asset.name}</div>
             <div className="ctn-point pos-relative">
-              <img src="/assets/images/Group 23@1X.png" alt="" />
-              <img src="/assets/images/Group 27@1X.png" alt="" />
+              <img src="assets/images/Group 23@1X.png" alt="" />
+              <img src="assets/images/Group 27@1X.png" alt="" />
             </div>
             <div className="line"></div>
           </div>
@@ -221,32 +219,84 @@ const CameraControls = () => {
     ))}</group>
   )
 }
-, App = () => {
-  const [guiData, setGuiData] = useState({ activeObject: "None", showHelpers: true })
+
+// NProgress.configure({ minimum: .2 })
+NProgress.start()
+
+export default function App() {
+  const [guiData, setGuiData] = useState({ activeObject: "None", showHelpers: !true })
   , [viewData, setViewData] = useState({
     opacity: 100, greyscale: false, 
     visible: "buildings", toggleOpts: false
   })
-  , handleChange = (value, property) => {
-    setViewData(prev => ({ ...prev, [property]: value }))
-  }
+  , handleChange = (value, property) => setViewData(prev => ({ ...prev, [property]: value }))
   , showItems = (e, type) => {
     e.preventDefault()
     setViewData(prev => ({ ...prev, visible: type }))
   }
   , { buildings, temp, reactors } = assetData
-
+  , annotationProps = { position: [20, 0, -10], guiData, setGuiData }
+  
   return (<>
-    {guiData.showHelpers && <FPSStats bottom={50} left={50} top={"unset"}/>}
-    <DatGui data={guiData} onUpdate={setGuiData}>
+    {/* <DatGui data={guiData} onUpdate={setGuiData}>
       <DatBoolean path='showHelpers' label='Show Helpers' />
       <DatString path='activeObject' label='Active Object' />
-    </DatGui>
+    </DatGui> */}
+    {guiData.showHelpers && <FPSStats bottom={50} left={30} top={"unset"}/>}
+    <div id="overlay" className="flex-y align-items-center">
+      <img className="loader" src="assets/images/loading.gif" />
+      <div><h1>3D rendering of an Industrial Siteplan</h1></div>
+      <div className="flex-x intro-parent">
+        <div>
+          <div className="flex-x item-image">
+            <img className="icon" src="assets/images/browsers.png" /> <h2>Works best in Google Chrome / Microsoft Edge</h2>
+          </div>
+          <div className="flex-x item-image">
+            <img className="icon" src="assets/images/wheel.png" /> <h2>Use mouse wheel to zoom in / out</h2>
+          </div>
+        </div>
+        <div>
+          <div className="flex-x item-image">
+            <img className="icon" src="assets/images/drag.png" /> <h2>Click and drag mouse to rotate the scene</h2>
+          </div>
+          <div className="flex-x item-image">
+            <img className="icon" src="assets/images/settings.png" /> <h2>Try out various configurations</h2>
+          </div>
+        </div>
+      </div>
+      <button id="enter" className="button smoke" onClick={() => {
+        document.getElementById("overlay").classList.add("closed")
+        }}>
+        <div><span>E</span><span>n</span><span>t</span><span>e</span><span>r</span></div>
+      </button>
+    </div>
+    <div id="ctn-about" className={`${viewData.toggleOpts ? "closed" : ""}`}>
+      <h2>Industrial Siteplan</h2>
+      <div>by&nbsp;
+        <a href="http://envisagecyberart.in" target="_blank">Anurag Srivastava</a><br />
+        <a href="http://envisagecyberart.in/projects/threejs-experiments" target="_blank">More 3D projects</a>
+      </div>
+      <a href="https://www.upwork.com/o/profiles/users/~01d929751d145a05ea/" target="_blank">
+        <img src="assets/images/upwork.png" alt="" />
+      </a>
+      <a href="https://www.guru.com/freelancers/anurag-srivastava-27" target="_blank">
+        <img src="assets/images/guru.png" alt="" />
+      </a>
+      <a href="mailto:anurag.131092@gmail.com&Subject=New Work Proposal">
+        <img src="assets/images/gmail.png" alt="" />
+      </a>
+      <a href="https://stackoverflow.com/users/7867822/anurag-srivastava" target="_blank">
+        <img src="assets/images/so.png" alt="" />
+      </a>
+      <a href="https://github.com/anuragsr" target="_blank">
+        <img src="assets/images/github.png" alt="" />
+      </a>
+    </div>
     <Canvas className={`canvas${viewData.greyscale ? " gray" : ""}`}>
       <OrthographicCamera
         makeDefault
-        position={[250, 250, 250]}
-        zoom={10}
+        position={[150, 70, 0]}
+        zoom={14}
         near={0}
         far={5000}/>
       <ambientLight intensity={.1}/>
@@ -256,12 +306,14 @@ const CameraControls = () => {
         intensity={1}
         position={[70, 50, 5]}
         />
-      <gridHelper args={[1000, 100]} visible={guiData.showHelpers} />
-      <axesHelper args={[500]} visible={guiData.showHelpers} />        
+      {guiData.showHelpers && <>
+        <gridHelper args={[1000, 100]}/>
+        <axesHelper args={[500]} /> 
+      </>}
       <CameraControls />
       <Suspense fallback={<Box position={[0, 0, 0]} />}>
         <Buildings
-          url="/assets/models/buildings.glb"
+          url="assets/models/buildings.glb"
           name="Buildings"
           position={[20, 0, -10]}
           opacity={viewData.opacity/100} 
@@ -269,12 +321,12 @@ const CameraControls = () => {
           assets={buildings}
           guiData={guiData}
           setGuiData={setGuiData}/>
-        <Ground name="Ground" position={[20, 0, -10]} url="/assets/models/ground.glb" opacity={.8}/>
-        <Annotation guiData={guiData} setGuiData={setGuiData} name="temp" showLabels={viewData.visible === "temp"} assets={temp}  />
-        <Annotation guiData={guiData} setGuiData={setGuiData} name="reactors" showLabels={viewData.visible === "react"} assets={reactors}  />
+        <Ground name="Ground" position={[20, 0, -10]} url="assets/models/ground.glb" opacity={.8}/>
+        <Annotation {...annotationProps} name="temp" showLabels={viewData.visible === "temp"} assets={temp} />
+        <Annotation {...annotationProps} name="reactors" showLabels={viewData.visible === "react"} assets={reactors} />
       </Suspense>
     </Canvas>
-    <button title="Hide Controls"
+    <button title="Toggle Controls"
       onClick={() => setViewData(prev => ({ ...prev, toggleOpts: !prev.toggleOpts }))} 
       className={`cursor-pointer btn-3d-toggle${viewData.toggleOpts ? " open" : ""}`}>
       <div></div>
@@ -317,9 +369,9 @@ const CameraControls = () => {
             onMouseOut={() => setGuiData(prev => ({ ...prev, activeObject: "None" }))}>
             <div className="flex-x space-between align-items-center">
               <div className="ctn-name">
-                <img src='/assets/images/building.png' alt="" />{asset.name}
+                <img src='assets/images/building.png' alt="" />{asset.name}
               </div>
-              <img height="5" src='/assets/images/arrow.png' alt="" />
+              <img height="5" src='assets/images/arrow.png' alt="" />
             </div>
             <div className="content">{asset.desc}</div>
           </div>
@@ -334,5 +386,3 @@ const CameraControls = () => {
     </div>
   </>)
 }
-
-export default App
