@@ -116,8 +116,8 @@ const CameraControls = () => {
             //   setGuiData(prev => ({ ...prev, activeObject: event.object.parent.name }))
             // }}
             >
-            <meshStandardMaterial {...child.material} transparent opacity={opacity}
-              emissive={guiData.activeObject === name ? 0xff0000 : child.material.origEmissive} />
+            <meshStandardMaterial {...child.material} transparent opacity={opacity} />
+              {/* emissive={guiData.activeObject === name ? 0xff0000 : child.material.origEmissive} /> */}
           </mesh>)
       })
     }</group>
@@ -133,16 +133,16 @@ const CameraControls = () => {
       //   setGuiData(prev => ({ ...prev, activeObject: event.object.name }))
       // }}
       >
-      <meshStandardMaterial {...material} transparent opacity={opacity}
-        emissive={guiData.activeObject === name ? 0xff0000 : material.origEmissive} />
+      <meshStandardMaterial {...material} transparent opacity={opacity} />
+        {/* emissive={guiData.activeObject === name ? 0xff0000 : material.origEmissive} /> */}
     </mesh>
   )
 }
 , Buildings = props => {
-  const { name, url, pos, opacity, showLabels, assets, guiData, setGuiData } = props
-  , annotationProps = { name: "buildings", showLabels, assets }
+  const { name, url, position, opacity, showLabels, assets, guiData, setGuiData } = props
+  , annotationProps = { name: "buildings", showLabels, assets, guiData, setGuiData }
+  , gltf = useLoader(GLTFLoader, url)
 
-  const gltf = useLoader(GLTFLoader, url)
   // l(gltf.scene)
   // document.getElementById("overlay").classList.add("closed")
 
@@ -159,7 +159,7 @@ const CameraControls = () => {
   })
   
   return (
-    <group name={name}>{gltf.scene.children.map((child, idx) => {
+    <group name={name} position={position}>{gltf.scene.children.map((child, idx) => {
       const childProps = { ...child, opacity, guiData, setGuiData }
       return (
         <React.Fragment key={idx}>
@@ -171,7 +171,7 @@ const CameraControls = () => {
     </group>
   )
 }
-, Ground = ({ name, url, opacity }) => {
+, Ground = ({ name, url, position, opacity }) => {
   const gltf = useLoader(GLTFLoader, url )
   // l(gltf.scene)
 
@@ -181,13 +181,14 @@ const CameraControls = () => {
 
   return <primitive name={name}
     object={gltf.scene}
+    position={position}
     // onPointerOver={() => {
     //   // l("over ground", event.object.name, event.object.parent.name)
     //   setGuiData(prev => ({ ...prev, activeObject: "None" }))
     // }}
     />
 }
-, Annotation = ({ name, assets, showLabels }) => {
+, Annotation = ({ name, assets, showLabels, guiData, setGuiData }) => {
   // l(name, assets, showLabels)
   let className
   switch(name){
@@ -201,7 +202,14 @@ const CameraControls = () => {
       <Html key={idx} center position={asset.coordinates}>
         <div className={className} id={`ann${idx}`}>
           <div className="pos-relative">
-            <div className="name">{asset.name}</div>
+            <div className={`name${asset.mesh === guiData.activeObject ? " active" : ""}`}
+              onMouseOver={(event) => {
+                // l("over annotation", event, asset)
+                event.stopPropagation()
+                if (name === "buildings") setGuiData(prev => ({ ...prev, activeObject: asset.mesh }))
+              }}
+              onMouseOut={() => setGuiData(prev => ({ ...prev, activeObject: "None" }))}
+            >{asset.name}</div>
             <div className="ctn-point pos-relative">
               <img src="/assets/images/Group 23@1X.png" alt="" />
               <img src="/assets/images/Group 27@1X.png" alt="" />
@@ -255,27 +263,28 @@ const CameraControls = () => {
         <Buildings
           url="/assets/models/buildings.glb"
           name="Buildings"
+          position={[20, 0, -10]}
           opacity={viewData.opacity/100} 
           showLabels={viewData.visible === "buildings"}
           assets={buildings}
           guiData={guiData}
           setGuiData={setGuiData}/>
-        <Ground name="Ground" url="/assets/models/ground.glb" opacity={.8}/>
-        <Annotation name="temp" showLabels={viewData.visible === "temp"} assets={temp}  />
-        <Annotation name="reactors" showLabels={viewData.visible === "react"} assets={reactors}  />
+        <Ground name="Ground" position={[20, 0, -10]} url="/assets/models/ground.glb" opacity={.8}/>
+        <Annotation guiData={guiData} setGuiData={setGuiData} name="temp" showLabels={viewData.visible === "temp"} assets={temp}  />
+        <Annotation guiData={guiData} setGuiData={setGuiData} name="reactors" showLabels={viewData.visible === "react"} assets={reactors}  />
       </Suspense>
     </Canvas>
-    <button 
+    <button title="Hide Controls"
       onClick={() => setViewData(prev => ({ ...prev, toggleOpts: !prev.toggleOpts }))} 
-      className={`btn-3d-toggle${viewData.toggleOpts ? " open" : ""}`}>
+      className={`cursor-pointer btn-3d-toggle${viewData.toggleOpts ? " open" : ""}`}>
       <div></div>
     </button>
-    <div className="flex-y asset-list--wrapper">
+    <div className={`flex-y asset-list--wrapper${viewData.toggleOpts ? " closed" : ""}`}>
       <div className="flex-x space-between align-items-center">
         <div className="asset-list--item ctn-slider flex-x space-between align-items-center">
           <span>Building Transparency</span>
           <button
-            className="btn btn-sm btn-light mr-3 flex-x center"
+            className="btn cursor-pointer mr-3 flex-x center"
             onClick={() => handleChange(Math.max(0, viewData.opacity - 10), "opacity")}
           >-</button>
           <Slider
@@ -292,7 +301,7 @@ const CameraControls = () => {
             onChange={value => handleChange(value, "opacity")}
           />
           <button
-            className="btn btn-sm btn-light ml-3 flex-x center"
+            className="btn cursor-pointer ml-3 flex-x center"
             onClick={() => handleChange(Math.min(viewData.opacity + 10, 100), "opacity")}
           >+</button>
         </div>
@@ -302,32 +311,22 @@ const CameraControls = () => {
       </div>
       <div className="flex-y asset-list-container">{
         buildings.map((asset, i) => (
-          <div
-            className={
-              // `asset-list--item${activeAsset === asset.assetId && " active"}`
-              `asset-list--item flex-x space-between align-items-center cursor-pointer`
-            }
-            key={i}
-            // onMouseEnter={() => {
-            //   if (activeAsset !== asset.assetId) {
-            //     dispatch(actions.setActiveAsset(asset.assetId))
-            //     dispatch(actions.setActiveAssetName(asset.name))
-            //   }
-            // }}
-            // onMouseLeave={() => {
-            //   dispatch(actions.setActiveAsset(null))
-            //   dispatch(actions.setActiveAssetName(""))
-            // }}
-          >
-            <div className="ctn-name">
-              <img src='/assets/images/building.png' alt="" />{asset.name}
+          <div key={i}
+            className={`asset-list--item cursor-pointer${asset.mesh === guiData.activeObject ? " active" : ""}`}
+            onMouseOver={() => setGuiData(prev => ({ ...prev, activeObject: asset.mesh }))}
+            onMouseOut={() => setGuiData(prev => ({ ...prev, activeObject: "None" }))}>
+            <div className="flex-x space-between align-items-center">
+              <div className="ctn-name">
+                <img src='/assets/images/building.png' alt="" />{asset.name}
+              </div>
+              <img height="5" src='/assets/images/arrow.png' alt="" />
             </div>
-            <img height="5" src='/assets/images/arrow.png' alt="" />
+            <div className="content">{asset.desc}</div>
           </div>
         ))
       }</div>     
     </div>
-    <div className="ctn-buttons-bottom">
+    <div className={`flex-x center ctn-buttons-bottom${viewData.toggleOpts ? " closed" : ""}`}>
       <a href="#" className={`${viewData.visible === "buildings" ? "active" : ""}`} onClick={e => { showItems(e, "buildings") }}>Buildings</a>
       <a href="#" className={`${viewData.visible === "temp" ? "active" : ""}`} onClick={e => { showItems(e, "temp") }}>Temperature Sensors</a>
       <a href="#" className={`${viewData.visible === "react" ? "active" : ""}`} onClick={e => { showItems(e, "react") }}>Reactors</a>

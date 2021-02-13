@@ -1,17 +1,15 @@
-// @import './vars';
-@import 'bootstrap/dist/css/bootstrap.min.css';
 @import '~rc-slider/assets/index.css';
 @import '~rc-switch/assets/index.css';
+
+// font
+@import url('https://fonts.googleapis.com/css2?family=Nunito&display=swap');
+$nu: 'Nunito';
 
 // vars
 $acc: #14ACEF;
 $w: #fff;
 $b: #000;
 $tr: transparent;
-
-// font
-@import url('https://fonts.googleapis.com/css2?family=Nunito&display=swap');
-$nu: 'Nunito';
 
 .flex-y{
   display: flex;
@@ -55,7 +53,7 @@ body {
       animation: left-right .7s alternate infinite;
     }
   }
-  &.open{ top: 30px; left: 80px; }
+  // &.open{ top: 30px; left: 80px; }
   div{
     height: 2px;
     width: 100%;
@@ -95,7 +93,7 @@ body {
   .ctn-point{ 
     img{ 
       position: absolute; top: 0; left: 0; 
-      transition: all .1s;
+      transition: all .3s;
       &:first-of-type{ opacity: 1; }
       &:last-of-type{ opacity: 0; }
     }
@@ -144,14 +142,14 @@ body {
     &#ann0{ 
       .line{ transform: rotate(-49deg); }
       .name{ 
-        left: 90px; top: -105px; 
+        left: 90px; top: -110px; 
         &:hover{ &~.line{ transform: rotate(-51deg); } }
       }
     }
     &#ann1{ 
       .line{ transform: rotate(-25deg); }
       .name{ 
-        left: 122px; top: -65px; 
+        left: 122px; top: -70px; 
         &:hover{ &~.line{ transform: rotate(-26deg); } }
       }
     }
@@ -179,7 +177,7 @@ body {
     &#ann5{ 
       .line{ transform: rotate(-43deg); }
       .name{ 
-        left: 100px; top: -97px; 
+        left: 100px; top: -103px; 
         &:hover{ &~.line{ transform: rotate(-44deg); } }
       }
     }
@@ -214,7 +212,8 @@ body {
   position: absolute;
   top: 90px; left: 30px;
   z-index: 2;
-
+  transition: all .3s;
+  &.closed{ left: -350px; }
   .asset-list--item{    
     padding: 12px 15px;
     color: $w;
@@ -234,12 +233,19 @@ body {
       }
       .btn{ 
         display: flex;
-        width: 40px;
-        height: 26px;
-        font-weight: bold;
+        width: 35px;
+        height: 24px;
         padding: 0;
         font-size: 20px;
-        &:focus{ box-shadow: none; }
+        // border-radius: 50%;
+        border: none;
+        color: $acc;
+        background: rgba($w, .7);
+        transition: all .3s;
+        &:focus{ outline: none; box-shadow: none; }
+        &:hover{ background: rgba($w, 1); }
+        &.ml-3{ margin-left: 10px; }
+        &.mr-3{ margin-right: 10px; }
       }
     }
     &.ctn-switch{ 
@@ -266,13 +272,20 @@ body {
   padding: 20px;
   border-radius: 2px;
   .asset-list--item{
-    transition: background .1s;
+    transition: background .3s;
     &.active, &:hover{
       // font-weight: bold;
       background: rgba(#A70300, .5); 
+      .content{ height: 80px; }
     }
     &:last-of-type{ margin-bottom: 0; }
     .ctn-name img{ height: 15px; margin-right: 15px; }
+    .content{ 
+      height: 0px; padding-top: 5px; 
+      overflow: hidden; 
+      transition: height .3s; 
+      font-size: 14px;
+    }
   }
 }
 
@@ -282,10 +295,8 @@ body {
   left: 0;
   width: 100%;
   pointer-events: none;
-  transition: all .5s ease-in-out;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  transition: all .3s ease-in-out;
+  &.closed{ bottom: -50px; }
   a{
     border-radius: 2px;
     background: rgba(#050719, .3);
