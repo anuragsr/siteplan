@@ -1,5 +1,5 @@
 import React, { useRef, useState, Suspense } from 'react'
-import { extend, Canvas, useFrame, useThree, useLoader } from 'react-three-fiber'
+import { extend, Canvas, useFrame, useThree, useLoader } from '@react-three/fiber'
 import { Html, OrthographicCamera } from '@react-three/drei'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
